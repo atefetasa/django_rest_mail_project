@@ -1,4 +1,6 @@
 from rest_framework.views import APIView
+from django.utils import timezone
+from rest_framework.generics import RetrieveUpdateAPIView
 import requests
 from .serializers import *
 from rest_framework.response import Response
@@ -48,6 +50,37 @@ class SendOtpView(APIView):
             return Response({'message': message}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-class ActivateAccountView(APIView):
-    def put(self, request):
-        pass
+class ActivateAccountView(RetrieveUpdateAPIView):
+    serializer_class = ActiveAccountSerializer
+
+    def update(self, request, *args, **kwargs):
+        ser_data = self.serializer_class(data=request.POST)
+        if ser_data.is_valid():
+            entered_code = ser_data.validated_data['code']
+            username = ser_data.validated_data['username']
+            user = User.objects.get(username__iexact=username)
+            if user.is_active:
+                raise serializers.ValidationError('your account has been activated before')
+
+            otp_object = OtpCode.objects.filter(user__username__iexact=username).latest('created_at')
+            current_time = timezone.now()
+            remained_time = current_time - otp_object.created_at
+            if otp_object.code != entered_code:
+                raise serializers.ValidationError("the entered code is invalid. please try again")
+
+            if remained_time.total_seconds() > 240:
+                raise serializers.ValidationError("the entered code has been expired.")
+
+            user.is_active = True
+            user.save()
+            return Response({'message': 'your account has been successfully activated.'}, status=status.HTTP_200_OK)
+
+        return Response(ser_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+

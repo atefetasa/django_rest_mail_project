@@ -73,5 +73,17 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return value
 
 
+class ActiveAccountSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=30)
+    code = serializers.CharField(max_length=6)
+
+    def validate_entered_code(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("code must be completely digits.")
+
+        return value
+
+
+
 
 
