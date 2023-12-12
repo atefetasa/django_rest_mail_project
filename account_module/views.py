@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from django.utils import timezone
 from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.permissions import AllowAny
 import requests
 from .serializers import *
 from rest_framework.response import Response
@@ -11,6 +12,8 @@ from .utils import *
 
 
 class UserRegisterView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         ser_data = UserRegisterSerializer(data=request.POST)
         if ser_data.is_valid():
@@ -37,6 +40,8 @@ class UserRegisterView(APIView):
 
 
 class SendOtpView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get('username', None)
         user = User.objects.filter(username__iexact=username).first()
@@ -51,10 +56,11 @@ class SendOtpView(APIView):
 
 
 class ActivateAccountView(RetrieveUpdateAPIView):
+    permission_classes = [AllowAny]
     serializer_class = ActiveAccountSerializer
 
     def update(self, request, *args, **kwargs):
-        ser_data = self.serializer_class(data=request.POST)
+        ser_data = self.serializer_class(data=request.data)
         if ser_data.is_valid():
             entered_code = ser_data.validated_data['code']
             username = ser_data.validated_data['username']
